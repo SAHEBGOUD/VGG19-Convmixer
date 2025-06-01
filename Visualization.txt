@@ -1,0 +1,65 @@
+%GCAM
+load("/MATLAB Drive/Combined_Model.mat")
+X = imread("/MATLAB Drive/1 (1).png");
+cmap = jet(256)
+%X=ind2rgb(X,cmap)
+figure 
+imshow(X)
+inputSize=[224 224]
+X = imresize(X,inputSize);
+imshow(X)
+label = classify(netTransfer,X)
+scoreMap = gradCAM(netTransfer,X,label);
+figure
+imshow(X)
+hold on
+imagesc(scoreMap,AlphaData=0.5)
+colormap jet
+
+%LIME
+load("/MATLAB Drive/Combined_Model.mat")
+X = imread("/MATLAB Drive/1 (1).png");
+%X = imread("/MATLAB Drive/Volume-000-000.png");
+ cmap = jet(256)
+X=ind2rgb(X,cmap)
+figure 
+imshow(X)
+inputSize=[224 224]
+X = imresize(X,inputSize);
+imshow(X)
+label = classify(netTransfer,X)
+%[scoreMap,featureMap,featureImportance]  = imageLIME(netTransfer,X,label,'Segmentation','grid','NumFeatures',64,'NumSamples',3072);
+
+scoreMap = imageLIME(netTransfer,X,label); %for direct visuualization
+figure
+imshow(X)
+hold on
+imagesc(scoreMap,'AlphaData',0.5)
+colormap jet
+
+% top five f4eatures
+% numTopFeatures = 5;
+% [~,idx] = maxk(featureImportance,numTopFeatures);
+% mask = ismember(featureMap,idx);
+% maskedImg = uint8(mask).*X;
+% figure
+% imshow(maskedImg);
+
+%OS
+[net,classNames] = imagePretrainedNetwork("/MATLAB Drive/Combined_Model.mat");
+X = imread("/MATLAB Drive/Negative_92_Coronary_411_RCA_Secondary1_16.png");
+inputSize = net.Layers(1).InputSize(1:2);
+X = imresize(X,inputSize);
+imshow(X)
+if canUseGPU
+    X = gpuArray(X);
+end
+scores = predict(net,single(X));
+[label,score] = scores2label(scores,classNames);
+channel = find(string(label) == classNames);
+scoreMap = occlusionSensitivity(net,X,channel);
+figure
+imshow(X)
+hold on
+imagesc(scoreMap,'AlphaData',0.5);
+colormap jet
